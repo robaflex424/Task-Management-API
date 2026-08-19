@@ -1,6 +1,6 @@
 from database.database import Base
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, Boolean, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Boolean, String, DateTime, ForeignKey, CheckConstraint
 
 class User(Base):
     __tablename__ = 'users'
@@ -16,6 +16,10 @@ class User(Base):
 
 class Task(Base):
     __tablename__ = 'tasks'
+    
+    __table_args__ = (
+        CheckConstraint("priority >= 1 AND priority <= 5", name="priority_range")
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, unique=True, nullable=False)
