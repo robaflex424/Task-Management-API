@@ -1,0 +1,18 @@
+# Virtual Environment
+TaskManagerEnv/
+
+# Environment variables / secrets
+.env
+
+# Python cache
+__pycache__
+
+# Pytest
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea
+
+# OS
+.DS_Store

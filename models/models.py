@@ -1,0 +1,31 @@
+from database.database import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, Boolean, String, DateTime, ForeignKey
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime)
+
+    tasks = relationship("Task", back_populates="owner")
+
+class Task(Base):
+    __tablename__ = 'tasks'
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, unique=True, nullable=False)
+    description = Column(String, unique=True, nullable=False)
+    completed = Column(Boolean, default=False)
+    priority = Column(Integer, nullable=False)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    due_date = Column(DateTime)
+
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+
+    owner = relationship("User", back_populates="tasks")
