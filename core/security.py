@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime, timezone
 from passlib.context import CryptContext
 from config import JWT_ALGORITHM, JWT_EXPIRATION, JWT_SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
-from jose import jwt
+from jose import JWTError, jwt
 
 pwd_context = CryptContext(
   schemes=["bcrypt"],
@@ -23,3 +23,21 @@ def create_access_token(user_id: int):
   }
 
   return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+def decode_access_token(token: str):
+  try: 
+    payload = jwt.decode(
+      token,
+      JWT_SECRET_KEY,
+      algorithms=[JWT_ALGORITHM]
+    )
+
+    user_id = payload.get("sub")
+
+    if user_id is None:
+      return None 
+    
+    return user_id 
+  
+  except JWTError:
+    return None

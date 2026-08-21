@@ -2,15 +2,18 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from database.database import LocalSession
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from models.models import User
-from core.security import hash_password, verify_password, create_access_token
+from core.security import hash_password, verify_password, create_access_token, decode_access_token
+from fastapi.security import OAuth2PasswordBearer
 
 
 router = APIRouter(
     prefix="/auth",
     tags=["auth"]
 )
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def get_db():
     db = LocalSession()
@@ -20,6 +23,31 @@ def get_db():
         db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
+token_dependency = Annotated[str, Depends(oauth2_scheme)]
+
+def get_current_user(token: token_dependency, db: db_dependency):
+  user_id = decode_access_token(token)
+
+  if user_id is None:
+    raise HTTPException(
+      status_code=401,
+      detail="Could not validate credentials."
+    )
+  
+  user = db.query(User).filter(User.id == int(user_id)).first() 
+
+  if user is None:
+    raise HTTPException(
+      status_code=401, 
+      detail="User not found."
+    )
+  
+  return user
+
+
+@router.get("/me")
+async def get_me(current_user: Annotated[User, Depends(get_current_user)]):
+  return current_user
 
 @router.post("/register", response_model=UserResponse)
 async def create_user(db: db_dependency, user_create: UserCreate):
