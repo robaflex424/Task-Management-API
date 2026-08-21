@@ -24,3 +24,4 @@ class TaskResponse(BaseModel):
     user_id: int
 
     model_config = ConfigDict(from_attributes=True)
+    # allows to read data from objects with user.id, instead of user["id"]
