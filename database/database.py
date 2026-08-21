@@ -4,7 +4,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from core.config import POSTGRESQL_DATABASE_URL
 
-engine = create_engine(POSTGRESQL_DATABASE_URL)
+SQLITE_DATABASE_URL = "sqlite:///./tasks.db"
+
+engine = create_engine(POSTGRESQL_DATABASE_URL, connect_args={"check_same_thread": True})
 
 LocalSession = sessionmaker(autoflush=False, autocommit=False, bind=engine)
 

@@ -8,7 +8,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=1, max_length=50)
+    password: str
 
 class UserResponse(BaseModel):
     id: int 
@@ -18,3 +18,7 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class TokenResponse(BaseModel):
+  access_token: str 
+  token_type: str

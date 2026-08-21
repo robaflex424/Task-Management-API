@@ -18,7 +18,10 @@ class Task(Base):
     __tablename__ = 'tasks'
     
     __table_args__ = (
-        CheckConstraint("priority >= 1 AND priority <= 5", name="priority_range")
+        CheckConstraint(
+          "priority >= 1 AND priority <= 5",
+           name="priority_range"
+           ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
