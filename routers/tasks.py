@@ -114,3 +114,26 @@ async def get_filtered_tasks(
   
   return query.all()
 
+
+# Sort tasks based on their date of creation, date of which the task is due, and priority
+@router.get("", response_model=list[TaskResponse])
+async def get_sorted_tasks(
+  db: db_dependency,
+  sort_by: str,
+  limit: int = Query(default=10, gt=0),
+  offset: int = Query(default=0, ge=0)
+):
+  query = db.query(Task)
+
+  if sort_by == "created_at":
+    query = query.order_by(Task.created_at.desc())
+  
+  elif sort_by == "due_date":
+    query = query.order_by(Task.due_date.desc())
+  
+  elif sort_by == "priority":
+    query = query.order_by(Task.priority.desc())
+  
+  query = query.limit(limit).offset(offset)
+
+  return query.all()
