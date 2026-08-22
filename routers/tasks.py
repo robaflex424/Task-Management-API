@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session 
 from models.models import Task
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
+from datetime import datetime
 
 router = APIRouter(
   prefix="/tasks",
@@ -86,3 +87,22 @@ async def delete_task_by_id(db: db_dependency, task_id: int = Path(gt=0)):
   
   db.delete(task_to_delete)
   db.commit()
+
+
+# Filter tasks based on priority, date of which the task is due, and if completed/uncompleted
+@router.get("", response_model=list[TaskResponse])
+async def get_filtered_tasks(
+    db: db_dependency, 
+    completed: bool | None = None, 
+    priority: int | None = None, 
+    due_date: datetime | None = None):
+  query = db.query(Task)
+
+  if completed is not None:
+    query = query.filter(Task.completed == completed)
+  if priority is not None:
+    query = query.filter(Task.priority == priority)
+  if due_date is not None:
+    query = query.filter(Task.due_date == due_date)
+  
+  return query.all()
