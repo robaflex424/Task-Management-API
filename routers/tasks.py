@@ -1,6 +1,6 @@
 from database.database import LocalSession
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session 
 from models.models import Task
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
@@ -24,9 +24,11 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.get("", response_model=list[TaskResponse])
 async def get_all_tasks(
   db: db_dependency,
+  limit: int = Query(default=10, gt=0),
+  offset: int = Query(default=0, ge=0)
   ):
 
-  tasks = db.query(Task).all()
+  tasks = db.query(Task).limit(limit).offset(offset).all()
 
   return tasks
 
@@ -111,3 +113,4 @@ async def get_filtered_tasks(
     query = query.filter(Task.due_date == due_date)
   
   return query.all()
+
