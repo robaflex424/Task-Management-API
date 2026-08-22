@@ -21,9 +21,14 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 # Get all tasks
-@router.get("")
-async def get_all_tasks(db: db_dependency):
-  return db.query(Task).all()
+@router.get("", response_model=list[TaskResponse])
+async def get_all_tasks(
+  db: db_dependency,
+  ):
+
+  tasks = db.query(Task).all()
+
+  return tasks
 
 
 # Create a task
