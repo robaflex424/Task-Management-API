@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from models.models import Task
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from datetime import datetime
+from sqlalchemy import func
 
 router = APIRouter(
   prefix="/tasks",
@@ -137,3 +138,20 @@ async def get_sorted_tasks(
   query = query.limit(limit).offset(offset)
 
   return query.all()
+
+
+# Search for tasks based on their title and description
+@router.get("", response_model=list[TaskResponse])
+async def search_tasks(
+  db: db_dependency,
+  query: str,
+  limit: int = Query(default=10, gt=0),
+  offset: int = Query(default=0, ge=0) 
+  ):
+
+    tasks = db.query(Task).filter(
+      Task.title.ilike(f"%{query}%") |
+      Task.description.ilike(f"%{query}%")
+    ).limit(limit).offset(offset).all()
+    
+    return tasks
