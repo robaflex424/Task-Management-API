@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from models.models import Task
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from datetime import datetime
-from sqlalchemy import func
+from auth import current_user_dependency, get_current_user
 
 router = APIRouter(
   prefix="/tasks",
@@ -25,19 +25,32 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.get("", response_model=list[TaskResponse])
 async def get_all_tasks(
   db: db_dependency,
+  current_user: current_user_dependency,
   limit: int = Query(default=10, gt=0),
   offset: int = Query(default=0, ge=0)
   ):
 
-  tasks = db.query(Task).limit(limit).offset(offset).all()
+  tasks = (
+    db.query(Task)
+    .filter(Task.user_id == current_user.id)
+    .limit(limit)
+    .offset(offset)
+    .all()
+  )
 
   return tasks
 
 
 # Create a task
-@router.post("", response_model=TaskResponse)
-async def create_task(db: db_dependency, task_create: TaskCreate):
-  task_model = Task(**task_create.model_dump())
+@router.post("", response_model=TaskResponse, status_code=201)
+async def create_task(
+    db: db_dependency, 
+    current_user: current_user_dependency,
+    task_create: TaskCreate
+  ):
+  
+  task_model = Task(**task_create.model_dump(), user_id=current_user.id)
+
   db.add(task_model)
   db.commit()
   db.refresh(task_model)
@@ -47,8 +60,19 @@ async def create_task(db: db_dependency, task_create: TaskCreate):
 
 # Get specific task by its Id
 @router.get("/{task_id}", response_model=TaskResponse)
-async def get_task_by_id(db: db_dependency, task_id: int = Path(gt=0)):
-  task_model = db.query(Task).filter(Task.id == int(task_id)).first()
+async def get_task_by_id(
+    db: db_dependency, 
+    current_user: current_user_dependency,
+    task_id: int = Path(gt=0)
+  ):
+  task_model = (
+    db.query(Task)
+    .filter(
+      Task.id == task_id, 
+      Task.user_id == current_user.id
+    )
+    .first()
+  )
 
   if task_model is None:
     raise HTTPException(
@@ -61,8 +85,21 @@ async def get_task_by_id(db: db_dependency, task_id: int = Path(gt=0)):
 
 # Update specific task by its Id
 @router.put("/{task_id}", response_model=TaskResponse)
-async def update_task_by_id(db: db_dependency, task_update: TaskUpdate ,task_id: int = Path(gt=0)):
-  task_to_update = db.query(Task).filter(Task.id == int(task_id)).first()
+async def update_task_by_id(
+    db: db_dependency, 
+    current_user: current_user_dependency,
+    task_update: TaskUpdate, 
+    task_id: int = Path(gt=0)
+  ):
+
+  task_to_update = (
+    db.query(Task)
+    .filter(
+      Task.id == task_id, 
+      Task.user_id == current_user.id
+    )
+    .first()
+  )
 
   if task_to_update is None:
     raise HTTPException(
@@ -70,11 +107,10 @@ async def update_task_by_id(db: db_dependency, task_update: TaskUpdate ,task_id:
       detail='Task not found!'
     )
   
-  task_to_update.title = task_update.title
-  task_to_update.description = task_update.description
-  task_to_update.priority = task_update.priority
-  task_to_update.completed = task_update.completed
-  task_to_update.due_date = task_update.due_date
+  update_data = task_update.model_dump(exclude_unset=True)
+
+  for field, value in update_data.items():
+    setattr(task_to_update, field, value)
   
   db.commit()
   db.refresh(task_to_update)
@@ -84,8 +120,20 @@ async def update_task_by_id(db: db_dependency, task_update: TaskUpdate ,task_id:
 
 # Delete task by Id
 @router.delete("/{task_id}")
-async def delete_task_by_id(db: db_dependency, task_id: int = Path(gt=0)):
-  task_to_delete = db.query(Task).filter(Task.id == int(task_id)).first()
+async def delete_task_by_id(
+  db: db_dependency,
+  current_user: current_user_dependency, 
+  task_id: int = Path(gt=0)
+  ):
+
+  task_to_delete = (
+    db.query(Task)
+    .filter(
+      Task.id == task_id,
+      Task.user_id == current_user.id
+      )
+      .first()
+    )
 
   if task_to_delete is None:
     raise HTTPException(
@@ -101,10 +149,11 @@ async def delete_task_by_id(db: db_dependency, task_id: int = Path(gt=0)):
 @router.get("", response_model=list[TaskResponse])
 async def get_filtered_tasks(
     db: db_dependency, 
+    current_user: current_user_dependency,
     completed: bool | None = None, 
     priority: int | None = None, 
     due_date: datetime | None = None):
-  query = db.query(Task)
+  query = db.query(Task).filter(Task.user_id == current_user.id)
 
   if completed is not None:
     query = query.filter(Task.completed == completed)
@@ -120,11 +169,12 @@ async def get_filtered_tasks(
 @router.get("", response_model=list[TaskResponse])
 async def get_sorted_tasks(
   db: db_dependency,
+  current_user: current_user_dependency,
   sort_by: str,
   limit: int = Query(default=10, gt=0),
   offset: int = Query(default=0, ge=0)
 ):
-  query = db.query(Task)
+  query = db.query(Task).filter(Task.user_id == current_user.id)
 
   if sort_by == "created_at":
     query = query.order_by(Task.created_at.desc())
@@ -135,6 +185,12 @@ async def get_sorted_tasks(
   elif sort_by == "priority":
     query = query.order_by(Task.priority.desc())
   
+  else:
+    raise HTTPException(
+      status_code=400,
+      detail="Invalid sort field. Use created_at, due_date, or priority."
+    )
+
   query = query.limit(limit).offset(offset)
 
   return query.all()
@@ -144,6 +200,7 @@ async def get_sorted_tasks(
 @router.get("", response_model=list[TaskResponse])
 async def search_tasks(
   db: db_dependency,
+  current_user: current_user_dependency,
   query: str,
   limit: int = Query(default=10, gt=0),
   offset: int = Query(default=0, ge=0) 
@@ -151,7 +208,8 @@ async def search_tasks(
 
     tasks = db.query(Task).filter(
       Task.title.ilike(f"%{query}%") |
-      Task.description.ilike(f"%{query}%")
-    ).limit(limit).offset(offset).all()
+      Task.description.ilike(f"%{query}%"),
+      Task.user_id == current_user.id
+    ).offset(offset).limit(limit).all()
     
     return tasks

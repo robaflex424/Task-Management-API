@@ -44,6 +44,8 @@ def get_current_user(token: token_dependency, db: db_dependency):
   
   return user
 
+current_user_dependency = Annotated[User, Depends(get_current_user)]
+
 
 @router.get("/me")
 async def get_me(current_user: Annotated[User, Depends(get_current_user)]):
