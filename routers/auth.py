@@ -1,4 +1,5 @@
 from typing import Annotated
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from database.database import LocalSession
@@ -46,32 +47,42 @@ def get_current_user(token: token_dependency, db: db_dependency):
 
 current_user_dependency = Annotated[User, Depends(get_current_user)]
 
-
 @router.get("/me")
 async def get_me(current_user: Annotated[User, Depends(get_current_user)]):
   return current_user
 
-@router.post("/register", response_model=UserResponse)
-async def create_user(db: db_dependency, user_create: UserCreate):
-    if db.query(User).filter(
-        User.email == user_create.email, 
-        User.username == user_create.username).first():
-      
-      raise HTTPException(
-        status_code=404, 
-        detail="User with this email or username already exists"
-        )
-    
-    user_model = User(username = user_create.username,
-                      email = user_create.email,
-                      hashed_password = hash_password(user_create.password)
-    )
-    
-    db.add(user_model)
-    db.commit()
-    db.refresh(user_model)
 
-    return user_model
+@router.post("/register", response_model=UserResponse)
+async def create_user(
+  db: db_dependency, 
+  user_create: UserCreate
+  ):
+
+  existing_user = db.query(User).filter(
+    or_(
+      User.username == user_create.username,
+      User.email == user_create.email
+    )
+  )
+
+  if existing_user:
+    raise HTTPException(
+      status_code=409,
+      detail="Email or username already registered."
+    )
+
+  user_model = User(
+    username=user_create.username,
+    email=user_create.email,
+    hashed_password=hash_password(user_create.password)
+  )
+
+  db.add(user_model)
+  db.commit()
+  db.refresh(user_model)
+
+  return user_model
+
 
 @router.post("/login", response_model=TokenResponse)
 async def login_user(db: db_dependency, user_login: UserLogin):

@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime, timezone
 from passlib.context import CryptContext
 from core.config import JWT_ALGORITHM, JWT_EXPIRATION, JWT_SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
-from jose import JWTError
+from jose import JWTError, jwt
 
 pwd_context = CryptContext(
   schemes=["bcrypt"],
