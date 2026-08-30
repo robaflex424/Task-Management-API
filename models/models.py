@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from database.database import Base
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, Boolean, String, DateTime, ForeignKey, CheckConstraint
@@ -10,7 +11,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     tasks = relationship("Task", back_populates="owner")
 
@@ -29,7 +30,7 @@ class Task(Base):
     description = Column(String, unique=True, nullable=False)
     completed = Column(Boolean, default=False)
     priority = Column(Integer, nullable=False)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime)
     due_date = Column(DateTime)
 

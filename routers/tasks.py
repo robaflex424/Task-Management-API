@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from models.models import Task
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from datetime import datetime
-from auth import current_user_dependency, get_current_user
+from routers.auth import current_user_dependency, get_current_user
 
 router = APIRouter(
   prefix="/tasks",

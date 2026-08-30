@@ -1,11 +1,24 @@
 from typing import Annotated
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
-from database.database import LocalSession
-from fastapi import APIRouter, Depends, HTTPException, status
+from schemas.user import (
+  UserCreate, 
+  UserLogin, 
+  UserResponse, 
+  TokenResponse
+)
+from database.database import get_db
+from fastapi import (
+  APIRouter, 
+  Depends, 
+  HTTPException)
 from models.models import User
-from core.security import hash_password, verify_password, create_access_token, decode_access_token
+from core.security import (
+  hash_password, 
+  verify_password, 
+  create_access_token, 
+  decode_access_token
+)
 from fastapi.security import OAuth2PasswordBearer
 
 
@@ -15,13 +28,6 @@ router = APIRouter(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-def get_db():
-    db = LocalSession()
-    try: 
-        yield db
-    finally:
-        db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
 token_dependency = Annotated[str, Depends(oauth2_scheme)]
@@ -60,10 +66,9 @@ async def create_user(
 
   existing_user = db.query(User).filter(
     or_(
-      User.username == user_create.username,
       User.email == user_create.email
     )
-  )
+  ).first()
 
   if existing_user:
     raise HTTPException(
