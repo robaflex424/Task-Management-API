@@ -7,7 +7,7 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=1, max_length=50)
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 class UserResponse(BaseModel):

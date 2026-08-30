@@ -90,14 +90,29 @@ async def create_user(
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login_user(db: db_dependency, user_login: UserLogin):
-  queried_user = db.query(User).filter(User.username == user_login.username).first()
+async def login_user(
+  db: db_dependency, 
+  user_login: UserLogin
+  ):
+  
+  queried_user = db.query(User).filter(
+    User.username == user_login.username
+  ).first()
   
   if queried_user is None :
-    raise HTTPException(status_code=401, detail="Incorrect credentials.")
+    raise HTTPException(
+      status_code=401, 
+      detail="Incorrect credentials."
+    )
   
-  if verify_password(user_login.password, queried_user.hashed_password) is False:
-    raise HTTPException(status_code=401, detail="Incorrect credentials.")
+  if verify_password(
+    user_login.password, 
+    queried_user.hashed_password
+  ) is False:
+    raise HTTPException(
+      status_code=401, 
+      detail="Incorrect credentials."
+    )
 
   access_token = create_access_token(queried_user.id)
 
