@@ -462,3 +462,159 @@ def test_invalid_data_fails(client):
 
   assert create_response.status_code == 201
   assert update_response.status_code == 422
+
+
+# -----------   TASK   DELETING   TESTS   -----------
+
+def test_owner_can_delete_task(client):
+  client.post(
+    "/auth/register",
+    json={
+      "username": "robaflex",
+      "email": "robaflex@test.com",
+      "password": "urmomma115"
+    }
+  )
+
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaflex",
+      "password": "urmomma115"
+    }
+  )      
+
+  token = login_response.json()["access_token"]
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  create_response = client.post(
+    "/tasks",
+    headers=headers,
+    json={
+      "title": "buy a gatti",
+      "description": "make it go up to 500km/h",
+      "priority": 5,
+      "due_date": None
+    }
+  )
+
+  task_id = create_response.json()["id"]
+  
+  delete_response = client.delete(
+    f"/tasks/{task_id}",
+    headers=headers
+  )
+
+  assert delete_response.status_code == 204
+
+  response = client.get(
+    f"/tasks/{task_id}",
+    headers=headers
+  )
+
+  assert response.status_code == 404
+
+
+def test_user_cant_delete_others_tasks(client):
+
+  # Create user robaflex
+  client.post(
+    "/auth/register",
+    json={
+      "username": "robaflex",
+      "email": "robaflex@test.com",
+      "password": "urmomma115"
+    }
+  )
+
+  login_response_robaflex = client.post(
+    "/auth/login",
+    json={
+      "username": "robaflex",
+      "password": "urmomma115"
+    }
+  )
+
+  token_robaflex = login_response_robaflex.json()["access_token"]
+  headers_robaflex = {
+    "Authorization": f"Bearer {token_robaflex}"
+  }
+
+  create_response = client.post(
+    "/tasks",
+    headers=headers_robaflex,
+    json={
+      "title": "do i wanna know?",
+      "description": "crawling back to you",
+      "priority" : 4,
+      "due_date": None
+    }
+  )
+
+  assert create_response.status_code == 201
+
+  task_id = create_response.json()["id"]
+
+  # Create user AK
+  client.post(
+    "/auth/register",
+    json={
+      "username": "user_ak",
+      "email": "ak@test.com",
+      "password": "urmomma0303"
+    }
+  )
+
+  login_response_ak = client.post(
+    "/auth/login",
+    json={
+      "username": "user_ak",
+      "password": "urmomma0303"
+    }
+  )
+  
+  token_ak = login_response_ak.json()["access_token"]
+  headers = {
+    "Authorization": f"Bearer {token_ak}"
+  }
+
+  # AK trying to delete robaflex's task
+  delete_response = client.delete(
+    f"/tasks/{task_id}",
+    headers=headers
+  )
+
+  assert delete_response.status_code == 404
+
+
+def test_deleting_nonexistent_task(client):
+  client.post(
+    "/auth/register",
+    json={
+      "username": "robaflex",
+      "email": "robaflex@test.com",
+      "password": "urmomma115"
+    }
+  )
+
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaflex",
+      "password": "urmomma115"
+    }
+  )  
+
+  token = login_response.json()["access_token"]
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  delete_response = client.delete(
+    "/tasks/115",
+    headers=headers
+  )
+
+  assert delete_response.status_code == 404
