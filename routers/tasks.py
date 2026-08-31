@@ -6,18 +6,12 @@ from models.models import Task
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from datetime import datetime
 from routers.auth import current_user_dependency, get_current_user
+from database.database import get_db
 
 router = APIRouter(
   prefix="/tasks",
   tags=["tasks"]
 )
-
-def get_db():
-  db = LocalSession()
-  try:
-    yield db
-  finally: 
-    db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
