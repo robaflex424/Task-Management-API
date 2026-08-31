@@ -113,7 +113,7 @@ async def update_task_by_id(
 
 
 # Delete task by Id
-@router.delete("/{task_id}")
+@router.delete("/{task_id}", status_code=204)
 async def delete_task_by_id(
   db: db_dependency,
   current_user: current_user_dependency, 
