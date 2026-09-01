@@ -1,5 +1,8 @@
 # -----------   TASK   CREATION   TESTS   -----------
 
+from schemas import task
+
+
 def test_authenticated_user_can_create_task(client):
   client.post(
     "/auth/register",
@@ -618,3 +621,51 @@ def test_deleting_nonexistent_task(client):
   )
 
   assert delete_response.status_code == 404
+
+
+def test_filtering_task(client):
+  client.post(
+    "/auth/register",
+    json={
+      "username": "robaflex",
+      "email": "robaflex@test.com",
+      "password": "urmomma115"
+    }
+  )
+
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaflex",
+      "password": "urmomma115"
+    }
+  )  
+
+  token = login_response.json()["access_token"]
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  client.post(
+    "/tasks",
+    headers=headers,
+    json={
+      "title": "message A.K",
+      "description": "some description A.K",
+      "priority": 5,
+      "due_date": None
+    }
+  )
+
+  response = client.get(
+    "/tasks/?priority=5",
+    headers=headers
+  )  
+
+  assert response.status_code == 200
+
+  tasks = response.json()
+
+  assert len(tasks) == 1
+  assert tasks[0]["priority"] == 5
+  assert tasks[0]["title"] == "message A.K"
